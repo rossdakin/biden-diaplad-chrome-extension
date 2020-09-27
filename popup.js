@@ -38,10 +38,8 @@ async function xhr(url, headers, method = "GET", body = null) {
 
 const timeout = (ms) => new Promise((res) => setTimeout(res, ms));
 
-const randomTimeout = (maxMs) => timeout(Math.random() * maxMs);
-
-async function modifyMembership(userId, callCenterId, add, headers, maxRand) {
-  await randomTimeout(maxRand);
+async function modifyMembership(userId, callCenterId, add, headers, delayMs) {
+  await timeout(delayMs);
 
   const url = `https://dialpad.com/api/operator/${userId}?group_id=${callCenterId}`;
   const body = add ? { add: true, skill_level: 100 } : { remove: true };
@@ -56,8 +54,9 @@ async function modifyMemberships(userId, callCenterIds, add, headers) {
     `Will ${add ? "add" : "remove"} ${callCenterIds.size} call centers`
   );
 
-  const promises = Array.from(callCenterIds).map((callCenterId) =>
-    modifyMembership(userId, callCenterId, add, headers, callCenterIds.size * 1000)
+  const SPACING_MS = add ? 325 : 750; // rough empirical observations
+  const promises = Array.from(callCenterIds).map((callCenterId, i) =>
+    modifyMembership(userId, callCenterId, add, headers, i * SPACING_MS)
   );
 
   return Promise.all(promises);
