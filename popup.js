@@ -56,36 +56,65 @@ async function modifyMemberships(userId, callCenterIds, add, headers) {
   return Promise.all(promises);
 }
 
+async function refreshUserData(_app) {
+  const url = `https://dialpad.com/api/user/${_app.userId}?replay`;
+  const { display_name, group_details, primary_email } = await xhr(url, _app.headers);
+  const call_center_ids = group_details.map(group => group.id);
+  const userData = { call_center_ids, display_name, primary_email, isLoaded: true };
+
+  _app.userData = userData;
+}
+
+async function refreshCallCenterDefs(_app) {
+  const url = "https://dialpad.com/api/group";
+  const callCenterDefs = await xhr(url, _app.headers);
+
+  _app.callCenterDefs = callCenterDefs.sort(alphabeticallyBy("display_name"));
+}
+
+// load up the most recent way we had the check boxes checked
+function refreshCheckedCallCenterIds(_app) {
+  chrome.storage.sync.get(["checkedCallCenterIds"], (value) => {
+    console.log("Stored value (sync): ", value);
+    const { checkedCallCenterIds } = value;
+
+    _app.checkedCallCenterIds = checkedCallCenterIds ?? [];
+  });
+}
+
 const app = new Vue({
   el: "#app",
   data: {
+    userId: null,
     userData: {
-      id: null,
       call_center_ids: [],
       display_name: null,
       primary_email: null,
+      isLoaded: false,
     },
     headers: [],
-    callCenters: [],
+    callCenterDefs: [],
     checkedCallCenterIds: [],
-    isThinking: false,
+    isAssigning: false,
   },
   methods: {
     assign: async function () {
-      this.isThinking = true;
+      this.isAssigning = true;
 
       await Promise.all([
-        modifyMemberships(this.userData.id, this.toAdd, true, this.headers),
-        modifyMemberships(this.userData.id, this.toRemove, false, this.headers),
+        modifyMemberships(this.userId, this.toAdd, true, this.headers),
+        modifyMemberships(this.userId, this.toRemove, false, this.headers),
       ]);
+      
+      await refreshUserData(this);
 
-      this.isThinking = false;
+      this.isAssigning = false;
     },
     isMember: function (callCenter) {
       return this.userData.call_center_ids.includes(callCenter.id);
     },
     checkAll: function () {
-      this.checkedCallCenterIds = [...this.callCenters.map((cc) => cc.id)];
+      this.checkedCallCenterIds = [...this.callCenterDefs.map((cc) => cc.id)];
     },
     checkNone: function () {
       this.checkedCallCenterIds = [];
@@ -108,33 +137,26 @@ const app = new Vue({
       return difference(this.have, this.want);
     },
   },
-  // watch: {
-  //   checkedCallCenterIds: function (checkedCallCenterIds) {
-  //     console.log("Observed checkedCallCenterIds change", checkedCallCenterIds);
-  //     chrome.storage.sync.set({ checkedCallCenterIds });
-  //   },
-  // },
+  watch: {
+    checkedCallCenterIds: function (checkedCallCenterIds) {
+      console.log("Observed checkedCallCenterIds change", checkedCallCenterIds);
+      chrome.storage.sync.set({ checkedCallCenterIds });
+    },
+  },
 });
 
 async function init(_app) {
-  // load up the most recent way we had the check boxes checked
-  chrome.storage.sync.get(["checkedCallCenterIds"], (value) => {
-    console.log("Stored value (sync): ", value);
-    const { checkedCallCenterIds } = value;
+  chrome.storage.local.get(["headers", "userId"], async (value) => {
+    const { headers, userId } = value;
 
-    _app.checkedCallCenterIds = checkedCallCenterIds ?? [];
-  });
-
-  // load up stuff pertaining to this user
-  chrome.storage.local.get(["userData", "headers"], async (value) => {
     console.log("Stored value (local): ", value);
-    const { userData, headers } = value;
 
     _app.headers = headers;
-    _app.userData = userData;
-    _app.callCenters = (
-      await xhr("https://dialpad.com/api/group", headers)
-    ).sort(alphabeticallyBy("display_name"));
+    _app.userId = userId;
+
+    refreshUserData(_app);
+    refreshCallCenterDefs(_app);
+    refreshCheckedCallCenterIds(_app);
   });
 }
 

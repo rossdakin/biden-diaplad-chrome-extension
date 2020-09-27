@@ -6,23 +6,25 @@
   </head>
   <body>
     <div id="app">
-      <h1 class="nowrap">{{ userData.display_name }}</h1>
-      <h3 class="nowrap">{{ userData.primary_email }}</h3>
+      <header v-if="userData.isLoaded">
+        <h1 class="nowrap">{{ userData.display_name }}</h1>
+        <h3 class="nowrap">{{ userData.primary_email }}</h3>
 
-      <p>
-        Currently in <strong>{{ userData.call_center_ids.length }}</strong> call
-        centers:
-      </p>
-
-      <div v-if="callCenters.length">
+        <p>
+          Currently in
+          <strong>{{ userData.call_center_ids.length }}</strong> call centers:
+        </p>
+      </header>
+      
+      <div v-if="callCenterDefs.length">
         <ul class="call-centers">
-          <li v-for="cc in callCenters" v-bind:cc="cc" v-bind:key="cc.id">
+          <li v-for="cc in callCenterDefs" v-bind:cc="cc" v-bind:key="cc.id">
             <input
               type="checkbox"
               class="checkbox"
               v-bind:value="cc.id"
               v-bind:id="cc.id"
-              v-bind:disabled="isThinking"
+              v-bind:disabled="isAssigning"
               v-model="checkedCallCenterIds"
             />
             <span class="membership" v-bind:class="{ active: isMember(cc) }"
@@ -37,7 +39,7 @@
         </ul>
 
         <footer>
-          <button id="assign" v-on:click="assign" v-bind:disabled="isThinking">
+          <button id="assign" v-on:click="assign" v-bind:disabled="isAssigning">
             Assign
           </button>
 
@@ -46,7 +48,7 @@
             >Remove: {{ toRemove.size }}</span
           >
 
-          <div class="thinking" v-if="isThinking">
+          <div class="assigning" v-if="isAssigning">
             <spinner v-bind:size="10" />
           </div>
           <div class="links" v-else>
@@ -61,7 +63,7 @@
         <spinner v-bind:size="18" />
       </div>
 
-      <p id="user-id" class="nowrap">{{ userData.id }}</p>
+      <p id="user-id" class="nowrap">{{ userId }}</p>
     </div>
 
     <script src="vue.js"></script>

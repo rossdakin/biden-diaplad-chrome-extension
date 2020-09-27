@@ -45,6 +45,8 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       return;
     }
 
+    const userId = match[1];
+
     // ensure we have headers
     const requestHeaders = details.requestHeaders;
     if (!requestHeaders) {
@@ -57,17 +59,8 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       headers[obj.name] = obj.value;
     });
 
-    // repeat this XHR request to get the full response body (the user data)
-    const allUserData = await getUserData(details.url, headers);
-    console.log("Found user data: ", allUserData);
-
-    // trim down the user data we push into local storage
-    const { id, display_name, group_details, image_url, primary_email } = allUserData;
-    const call_center_ids = group_details.map(group => group.id);
-    const userData = { id, call_center_ids, display_name, image_url, primary_email };
-
     // store data locally for content script to use
-    const data = { userData, headers };
+    const data = { headers, userId };
     console.log('Setting local storage', data);
     chrome.storage.local.set(data);
   },
