@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div id="app">
+      <h1 class="nowrap">{{ userData.display_name }}</h1>
+      <h3 class="nowrap">{{ userData.primary_email }}</h3>
+
+      <p>
+        Currently in <strong>{{ userData.call_center_count }}</strong> call
+        centers:
+      </p>
+
+      <div v-if="callCenters.length">
+        <ul class="call-centers">
+          <callcenter-item
+            v-for="cc in callCenters"
+            v-bind:cc="cc"
+            v-bind:is-member="isMember(cc)"
+            v-bind:is-thinking="isThinking"
+            v-bind:key="cc.id"
+          ></callcenter-item>
+        </ul>
+
+        <button id="assign" v-on:click="assign" v-bind:disabled="isThinking">
+          Assign
+        </button>
+        <div class="thinking" v-if="isThinking">
+          <spinner v-bind:size="12" />
+        </div>
+      </div>
+
+      <div v-else class="loading">
+        <spinner v-bind:size="18" />
+      </div>
+
+      <p id="user-id" class="nowrap">{{ userData.id }}</p>
+    </div>
+
+    <script src="vue.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
