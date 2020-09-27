@@ -161,6 +161,7 @@ const app = new Vue({
     checkedCallCenterIds: function (checkedCallCenterIds) {
       console.log("Observed checkedCallCenterIds change", checkedCallCenterIds);
       chrome.storage.sync.set({ checkedCallCenterIds });
+      this.hasAssigned = false;
     },
   },
 });
