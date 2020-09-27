@@ -47,6 +47,12 @@
             Assign
           </button>
 
+          <img
+            src="images/star.png"
+            class="star"
+            v-if="hasAssigned && !toAdd.size && !toRemove.size"
+          />
+
           <span v-if="toAdd.size" class="add delta">Add: {{ toAdd.size }}</span>
           <span v-if="toRemove.size" class="remove delta"
             >Remove: {{ toRemove.size }}</span

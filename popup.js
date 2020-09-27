@@ -110,10 +110,12 @@ const app = new Vue({
     callCenterDefs: [],
     checkedCallCenterIds: [],
     isAssigning: false,
+    hasAssigned: false,
   },
   methods: {
     assign: async function () {
       this.isAssigning = true;
+      this.hasAssigned = true;
 
       try {
         await Promise.all([

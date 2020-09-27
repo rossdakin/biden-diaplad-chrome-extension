@@ -59,7 +59,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       headers[obj.name] = obj.value;
     });
 
-    // store data locally for content script to use
+    // store data locally for popup script to use
     const data = { headers, userId };
     console.log('Setting local storage', data);
     chrome.storage.local.set(data);
