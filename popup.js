@@ -36,21 +36,28 @@ async function xhr(url, headers, method = "GET", body = null) {
   return await response.json();
 }
 
-async function modifyMembership(userId, callCenterId, add, headers) {
+const timeout = (ms) => new Promise((res) => setTimeout(res, ms));
+
+const randomTimeout = (maxMs) => timeout(Math.random() * maxMs);
+
+async function modifyMembership(userId, callCenterId, add, headers, maxRand) {
+  await randomTimeout(maxRand);
+
   const url = `https://dialpad.com/api/operator/${userId}?group_id=${callCenterId}`;
   const body = add ? { add: true, skill_level: 100 } : { remove: true };
+
+  console.log(`Will ${add ? "add" : "remove"} ${callCenterId}`);
 
   return xhr(url, headers, "PATCH", JSON.stringify(body));
 }
 
 async function modifyMemberships(userId, callCenterIds, add, headers) {
   console.log(
-    `Will ${add ? "add" : "remove"} ${callCenterIds.size} call centers`,
-    headers
+    `Will ${add ? "add" : "remove"} ${callCenterIds.size} call centers`
   );
 
   const promises = Array.from(callCenterIds).map((callCenterId) =>
-    modifyMembership(userId, callCenterId, add, headers)
+    modifyMembership(userId, callCenterId, add, headers, callCenterIds.size * 1000)
   );
 
   return Promise.all(promises);
@@ -58,9 +65,17 @@ async function modifyMemberships(userId, callCenterIds, add, headers) {
 
 async function refreshUserData(_app) {
   const url = `https://dialpad.com/api/user/${_app.userId}?replay`;
-  const { display_name, group_details, primary_email } = await xhr(url, _app.headers);
-  const call_center_ids = group_details.map(group => group.id);
-  const userData = { call_center_ids, display_name, primary_email, isLoaded: true };
+  const { display_name, group_details, primary_email } = await xhr(
+    url,
+    _app.headers
+  );
+  const call_center_ids = group_details.map((group) => group.id);
+  const userData = {
+    call_center_ids,
+    display_name,
+    primary_email,
+    isLoaded: true,
+  };
 
   _app.userData = userData;
 }
@@ -101,14 +116,15 @@ const app = new Vue({
     assign: async function () {
       this.isAssigning = true;
 
-      await Promise.all([
-        modifyMemberships(this.userId, this.toAdd, true, this.headers),
-        modifyMemberships(this.userId, this.toRemove, false, this.headers),
-      ]);
-      
-      await refreshUserData(this);
-
-      this.isAssigning = false;
+      try {
+        await Promise.all([
+          modifyMemberships(this.userId, this.toAdd, true, this.headers),
+          modifyMemberships(this.userId, this.toRemove, false, this.headers),
+        ]);
+      } finally {
+        await refreshUserData(this);
+        this.isAssigning = false;
+      }
     },
     isMember: function (callCenter) {
       return this.userData.call_center_ids.includes(callCenter.id);
@@ -135,6 +151,9 @@ const app = new Vue({
     },
     toRemove: function () {
       return difference(this.have, this.want);
+    },
+    isClean: function () {
+      return this.toAdd.size === 0 && this.toRemove.size === 0;
     },
   },
   watch: {

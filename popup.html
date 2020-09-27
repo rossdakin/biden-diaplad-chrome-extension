@@ -15,10 +15,10 @@
           <strong>{{ userData.call_center_ids.length }}</strong> call centers:
         </p>
       </header>
-      
+
       <div v-if="callCenterDefs.length">
         <ul class="call-centers">
-          <li v-for="cc in callCenterDefs" v-bind:cc="cc" v-bind:key="cc.id">
+          <li v-for="cc in callCenterDefs" v-bind:key="cc.id">
             <input
               type="checkbox"
               class="checkbox"
@@ -39,7 +39,11 @@
         </ul>
 
         <footer>
-          <button id="assign" v-on:click="assign" v-bind:disabled="isAssigning">
+          <button
+            id="assign"
+            v-on:click="assign"
+            v-bind:disabled="isAssigning || isClean"
+          >
             Assign
           </button>
 
@@ -66,7 +70,7 @@
       <p id="user-id" class="nowrap">{{ userId }}</p>
     </div>
 
-    <script src="vue.js"></script>
+    <script src="vue.min.js"></script>
     <script src="spinner.js"></script>
     <script src="popup.js"></script>
   </body>
