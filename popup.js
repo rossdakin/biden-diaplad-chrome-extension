@@ -1,3 +1,11 @@
+function difference(setA, setB) {
+  let _difference = new Set(setA);
+  for (let elem of setB) {
+    _difference.delete(elem);
+  }
+  return _difference;
+}
+
 async function addToCallCenter(userId, groupId, add) {
   const url = `https://dialpad.com/api/operator/${userId}?group_id=${groupId}`;
   const body = add ? '{"add":true,"skill_level":100}' : '{"remove":true}';
@@ -25,17 +33,6 @@ async function assignToAllCallCenters(userId) {
   return await Promise.all(promises);
 }
 
-Vue.component("callcenter-item", {
-  props: ["cc", "isMember", "isThinking"],
-  template: `
-  <li>
-    <input type="checkbox" class="checkbox" v-bind:id="cc.id" v-bind:disabled="isThinking" />
-    <span class="membership" v-bind:class="{ active: isMember }">&check;</span>
-    <label v-bind:for="cc.id" v-bind:style="{ fontWeight: isMember ? 'bold' : 'normal' }">{{ cc.display_name }}</label>
-  </li>
-  `,
-});
-
 Vue.component("spinner", {
   props: ["size"],
   template: `
@@ -47,31 +44,60 @@ Vue.component("spinner", {
   `,
 });
 
-const assign = async function () {
-  this.isThinking = true;
-
-  // await assignToAllCallCenters(this.userId);
-
-  // this.isThinking = false;
-};
-
-const isMember = function (callCenter) {
-  console.log('this: ', this);
-  console.log('callCenter: ', callCenter);
-  return this.userData.call_center_ids.includes(callCenter.id);
-};
-
 const app = new Vue({
   el: "#app",
   data: {
-    userData: {},
+    userData: {
+      id: null,
+      call_center_ids: [],
+      display_name: null,
+      primary_email: null,
+    },
     headers: [],
     callCenters: [],
+    checkedCallCenterIds: [],
     isThinking: false,
   },
   methods: {
-    assign,
-    isMember,
+    assign: async function () {
+      this.isThinking = true;
+
+      // await assignToAllCallCenters(this.userId);
+
+      // this.isThinking = false;
+    },
+    isMember: function (callCenter) {
+      return this.userData.call_center_ids.includes(callCenter.id);
+    },
+    checkAll: function() {
+      this.checkedCallCenterIds = [...this.callCenters.map(cc => cc.id)];
+    },
+    checkNone: function() {
+      this.checkedCallCenterIds = [];
+    },
+    checkReset: function() {
+      this.checkedCallCenterIds = [...this.userData.call_center_ids];
+    },
+  },
+  computed: {
+    have: function () {
+      return new Set(this.userData.call_center_ids);
+    },
+    want: function () {
+      return new Set(this.checkedCallCenterIds);
+    },
+    toAdd: function () {
+      return difference(this.want, this.have);
+    },
+    toRemove: function () {
+      return difference(this.have, this.want);
+    },
+  },
+  watch: {
+    checkedCallCenterIds: function (checkedCallCenterIds) {
+      console.log("Observed checkedCallCenterIds change", checkedCallCenterIds);
+      chrome.storage.sync.set({ checkedCallCenterIds });
+    },
   },
 });
 
@@ -94,8 +120,17 @@ async function xhr(url, method = "GET", body = null) {
 }
 
 async function init() {
+  // load up the most recent way we had the check boxes checked
+  chrome.storage.sync.get(["checkedCallCenterIds"], (value) => {
+    console.log("Stored value (sync): ", value);
+    const { checkedCallCenterIds } = value;
+
+    app.checkedCallCenterIds = checkedCallCenterIds ?? [];
+  });
+
+  // load up stuff pertaining to this user
   chrome.storage.local.get(["userData", "headers"], async (value) => {
-    console.log("Stored value: ", value);
+    console.log("Stored value (local): ", value);
     const { userData, headers } = value;
 
     app.headers = headers;

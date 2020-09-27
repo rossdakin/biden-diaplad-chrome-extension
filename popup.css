@@ -3,6 +3,7 @@
 }
 
 #user-id {
+  color: silver;
   font-size: xx-small;
 }
 
@@ -35,9 +36,42 @@ label {
   margin: 3em auto;
 }
 
+footer {
+  display: flex;
+  align-items: center;
+}
+
+#assign {
+  margin-right: 0.25em;
+}
+
+.delta {
+  margin-left: 0.5em;
+}
+
+.links {
+  flex-grow: 1;
+  text-align: right;
+}
+
+.links a {
+  color: blue;
+  cursor: pointer;
+  margin-left: 0.25em;
+  text-decoration: underline;
+}
+
+.add {
+  color: green;
+}
+
+.remove {
+  color: Crimson;
+}
+
 .thinking {
   display: inline-block;
-  vertical-align: middle;
+  flex-grow: 1;
   margin-left: 0.5em;
 }
 

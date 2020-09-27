@@ -62,9 +62,9 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     console.log("Found user data: ", allUserData);
 
     // trim down the user data we push into local storage
-    const { id, call_center_count, display_name, group_details, image_url, primary_email } = allUserData;
+    const { id, display_name, group_details, image_url, primary_email } = allUserData;
     const call_center_ids = group_details.map(group => group.id);
-    const userData = { id, call_center_count, call_center_ids, display_name, image_url, primary_email };
+    const userData = { id, call_center_ids, display_name, image_url, primary_email };
 
     // store data locally for content script to use
     const data = { userData, headers };
