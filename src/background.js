@@ -13,24 +13,6 @@ chrome.runtime.onInstalled.addListener(function () {
   });
 });
 
-async function getUserData(url, headers) {
-  const response = await fetch(url + "?replay", {
-    headers: { ...headers, "request-timestamp": Date.now() },
-    referrer: "https://dialpad.com/accounts",
-    referrerPolicy: "no-referrer-when-downgrade",
-    body: null,
-    method: "GET",
-    mode: "cors",
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed user data fetch (${response.status})`);
-  }
-
-  return await response.json();
-}
-
 // listen for real (user-created) XHR for user data
 chrome.webRequest.onBeforeSendHeaders.addListener(
   async function (details) {
